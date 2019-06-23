@@ -33,8 +33,29 @@ dependencies {
     attributesSchema {
         attribute(minify)                      // (1)
     }
+//    artifactTypes.forEach {
+//        logger.lifecycle("artifactType: ${it.attributes}")
+//        it.attributes.keySet().forEach {
+//            logger.lifecycle("${it.name}, ${it.type}")
+//        }
+//    }
+    logger.lifecycle("artifactTypes: ${artifactTypes}")
+    artifactTypes.asMap.forEach { (artifactTypeKey,artifactType) ->
+        logger.lifecycle("  key: $artifactTypeKey")
+        artifactType.attributes.apply {
+            this.keySet().forEach { key ->
+                val attributeValue = getAttribute(key)
+                logger.lifecycle("    ${key.name}: ${key.type} = $attributeValue")
+            }
+        }
+    }
+    logger.lifecycle("attributesSchema: ${attributesSchema.attributes}")
     artifactTypes.getByName("jar") {
         attributes.attribute(minify, false)    // (2)
+    }
+    artifactTypes.create("sources") {
+        attributes.attribute(artifactType, "sources-jar")
+        attributes.attribute(minify, false)
     }
 }
 
@@ -50,6 +71,8 @@ dependencies {
 //        }
 //    }
 //}
+
+
 
 /**
  *  this is used to only minify guava, see Minify.kt line 17
@@ -84,10 +107,11 @@ dependencies {
  *  wraps applying attributes in a function
  */
 fun unzip(dep: ExternalModuleDependency) = dep.apply {
-     attributes {
+    attributes {
         attribute(artifactType, "java-classes-directory")
     }
 }
+
 fun minfiy(dep: ExternalModuleDependency) = dep.apply {
     attributes {
         attribute(minify, true)
@@ -95,7 +119,7 @@ fun minfiy(dep: ExternalModuleDependency) = dep.apply {
 }
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    minfiy(unzip(implementation("com.google.guava", "guava:27.1-jre")))
+    minfiy(unzip(implementation("com.google.guava", "guava", "27.1-jre")))
     unzip(testCompile("junit", "junit", "4.12"))
 
     /**
@@ -115,4 +139,43 @@ configure<JavaPluginConvention> {
 }
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+afterEvaluate {
+    configurations.all {
+        logger.lifecycle("$this")
+        this.allDependencies.forEach {
+            if(it is ExternalModuleDependency) {
+                logger.lifecycle("")
+                logger.lifecycle("  dependency: $it")
+                it.attributes {
+                    this.keySet().forEach { key ->
+                        val attributeValue = getAttribute(key)
+                        logger.lifecycle("    ${key.name}: ${key.type} = $attributeValue")
+                    }
+                }
+            }
+        }
+    }
+}
+afterEvaluate {
+    dependencies {
+        this.attributesSchema {
+            logger.lifecycle("")
+            logger.lifecycle("attributesSchema")
+            this.attributes.forEach { key ->
+                logger.lifecycle("  ${key.name}: ${key.type.canonicalName}")
+            }
+        }
+
+        artifactTypes.forEach {
+            logger.lifecycle("")
+            logger.lifecycle("artifactType: ${it.name}")
+
+            it.attributes.keySet().forEach { attr ->
+                logger.lifecycle("  ${attr.name}: ${attr.type} = ${it.attributes.getAttribute(attr)}")
+            }
+        }
+
+    }
 }
