@@ -106,21 +106,26 @@ dependencies {
 /**
  *  wraps applying attributes in a function
  */
-fun unzip(dep: ExternalModuleDependency) = dep.apply {
-    attributes {
-        attribute(artifactType, "java-classes-directory")
-    }
+fun <D: ModuleDependency> unzip(dep: D) = dep.apply {
+        attributes {
+            attribute(artifactType, "java-classes-directory")
+        }
 }
 
-fun minfiy(dep: ExternalModuleDependency) = dep.apply {
+fun <D: ModuleDependency> minify(dep: D) = dep.apply {
     attributes {
         attribute(minify, true)
     }
 }
+
+fun <D: Dependency> unzip(dep: D?) =  unzip(dep as ModuleDependency)
+fun <D: Dependency> minify(dep: D?) =  minify(dep as ModuleDependency)
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    minfiy(unzip(implementation("com.google.guava", "guava", "27.1-jre")))
+    minify(unzip(implementation("com.google.guava", "guava", "27.1-jre")))
     unzip(testCompile("junit", "junit", "4.12"))
+    minify(implementation(project(":api")))
 
     /**
      * apply attributes manually
